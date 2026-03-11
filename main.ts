@@ -1,12 +1,12 @@
-﻿/*
-Copyright (C): 2010-2019, Shenzhen Yahboom Tech
-modified from liusen
-load dependency
-"SuperBitV2": "file:../pxt-SuperBitV2"
+/*
+Nombre: Bloques para SuperbitV2
+Versión: 1.0.0
+Licencia: MIT
+Hecho por: AIC-fe5d44-ECA40D
 */
 
-//% color="#ECA40D" weight=30 icon="\uf135"
-namespace SuperBitV2 {
+//% color="#fe5d44" weight=30 icon="\uf135"
+namespace Codimaker {
 
     const PCA9685_ADD = 0x40
     const MODE1 = 0x00
@@ -304,40 +304,52 @@ namespace SuperBitV2 {
             let pwm = us * 4096 / 20000;
             setPwm(num, 0, pwm);
         }
-
-       
-
     }
 
-    //% blockId=SuperBitV2_Servo4 block="Servo(360°_rotatable)|num %num|pos %pos|value %value"
-    //% weight=96
-    //% blockGap=10
-    //% num.min=1 num.max=4 value.min=0 value.max=90
-    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=20
-    export function Servo4(num: enServo, pos: enPos, value: number): void {
-
-        // 50hz: 20,000 us
-        
-        if (pos == enPos.stop) {
-            let us = (110 * 1800 / 180 + 600); // 0.6 ~ 2.4 error:86->110
-            let pwm = us * 4096 / 20000;
-            setPwm(num, 0, pwm);
-        }
-        else if(pos == enPos.forward){ //0-90 -> 90 - 0
-            let us = ((110-value) * 1800 / 180 + 600); // 0.6 ~ 2.4 error:90->110
-            let pwm = us * 4096 / 20000;
-            setPwm(num, 0, pwm);
-        }
-        else if(pos == enPos.reverse){ //0-90 -> 90 -180  error:90->110
-            let us = ((110+value) * 1800 / 180 + 600); // 0.6 ~ 2.4
-            let pwm = us * 4096 / 20000;
-            setPwm(num, 0, pwm);
-        }
-
-       
-
+	
+//INICIA-BLOQUE MOTOR 360 Y CALIBRACIÓN
+export enum enDireccion { 
+    //% block="⬅ izquierda"
+    izquierda = 0,
+    //% block="➡ derecha"
+    derecha = 1
+}
+// PUNTO CERO DE CADA SERVO
+let SERVO_STOP: number[] = [110,110,110,110,110,110,110,110]
+// FUNCIÓN INTERNA PARA ESCRIBIR PWM
+function servoWrite(num: enServo, us: number): void {
+    let pwm = us * 4096 / 20000
+    setPwm(num, 0, pwm)
+}
+// BLOQUE DE CALIBRACIÓN
+//% blockId=SuperBitV2_servo_calibrate
+//% block="calibrar servo|puerto %num|ajuste %trim"
+//% weight=100
+//% blockGap=20
+//% trim.min=-10 trim.max=10
+export function calibrarServo(num: enServo, trim: number): void {
+    if (num < 0 || num > 7) return
+    SERVO_STOP[num] = 110 + trim
+}
+//% blockId=SuperBitV2_Servo360
+//% block="Servo(360°)|puerto %num|girar %dir|ángulo %value"
+//% weight=96
+//% blockGap=10
+//% value.min=0 value.max=180
+export function Servo360(num: enServo, dir: enDireccion, value: number): void {
+    if (num < 0 || num > 7) return
+    value = Math.constrain(value, 0, 180)
+    let v = Math.map(value, 0, 180, 0, 120)
+    let base = SERVO_STOP[num]
+    if (dir == enDireccion.izquierda) {
+        base = base - v
+    } else {
+        base = base + v
     }
-    
+    let us = (base * 1800 / 180 + 600)
+    servoWrite(num, us)
+}
+//FIN-BLOQUE MOTOR 360
    
     //% blockId=SuperBitV2_MotorRun block="Motor|%index|speed(-255~255) %speed"
     //% weight=93
